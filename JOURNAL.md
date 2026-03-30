@@ -58,3 +58,13 @@
 - **Socratic Mode**: OFF
 - **Changes Made**: Updated main.py to generate random size and color per square, and adjusted movement/bounce logic to use each square size. Rewrote README.md with features, requirements, setup, run, and controls.
 - **Context and Reasons for Changes**: User requested random square sizes/colors and a README update after implementation.
+### **New Interaction**
+- **Agent Version**: 2.2
+- **Date**: 30-03-2026 12:02
+- **User**: Meaow_09@outlook.com
+- **Prompt**: I want smaller squares can move faster than the bigger ones, bigger ones move slower, and they change direction while crash others
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5-Codex
+- **Socratic Mode**: OFF
+- **Changes Made**: Updated main.py to map speed inversely to square size, initialize velocity from mapped speed and random angle, add square-square collision detection/resolution, and reverse directions on collision.
+- **Context and Reasons for Changes**: User requested smaller squares to move faster, bigger squares slower, and direction changes when squares crash into each other.

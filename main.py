@@ -1,5 +1,5 @@
 import random
-
+import math
 import pygame
 
 WIDTH = 1000
@@ -11,6 +11,16 @@ MIN_SPEED = 1.0
 MAX_SPEED = 3.0
 MIN_SQUARE_SIZE = 20
 MAX_SQUARE_SIZE = 70
+
+
+def speed_from_size(size: int) -> float:
+    """Map smaller sizes to faster speed and bigger sizes to slower speed."""
+    size_range = MAX_SQUARE_SIZE - MIN_SQUARE_SIZE
+    if size_range <= 0:
+        return MIN_SPEED
+
+    normalized = (size - MIN_SQUARE_SIZE) / size_range
+    return MAX_SPEED - normalized * (MAX_SPEED - MIN_SPEED)
 
 
 def init_game() -> tuple[pygame.Surface, pygame.time.Clock]:
@@ -30,8 +40,10 @@ def create_squares(count: int) -> list[dict[str, object]]:
         size = random.randint(MIN_SQUARE_SIZE, MAX_SQUARE_SIZE)
         x = random.randint(0, WIDTH - size)
         y = random.randint(0, HEIGHT - size)
-        vx = random.choice([-1.0, 1.0]) * random.uniform(MIN_SPEED, MAX_SPEED)
-        vy = random.choice([-1.0, 1.0]) * random.uniform(MIN_SPEED, MAX_SPEED)
+        speed = speed_from_size(size)
+        angle = random.uniform(0.0, 2 * math.pi)
+        vx = math.cos(angle) * speed
+        vy = math.sin(angle) * speed
         color = (
             random.randint(40, 255),
             random.randint(40, 255),
@@ -49,6 +61,62 @@ def create_squares(count: int) -> list[dict[str, object]]:
         squares.append(square)
 
     return squares
+
+
+def squares_overlap(a: dict[str, object], b: dict[str, object]) -> bool:
+    """Return True when two square hitboxes intersect."""
+    ax = float(a["x"])
+    ay = float(a["y"])
+    asize = float(a["size"])
+    bx = float(b["x"])
+    by = float(b["y"])
+    bsize = float(b["size"])
+
+    return ax < bx + bsize and ax + asize > bx and ay < by + bsize and ay + asize > by
+
+
+def resolve_square_collisions(squares: list[dict[str, object]]) -> None:
+    """Make squares change direction when colliding with each other."""
+    for i in range(len(squares)):
+        for j in range(i + 1, len(squares)):
+            first = squares[i]
+            second = squares[j]
+
+            if not squares_overlap(first, second):
+                continue
+
+            first["vx"] = -float(first["vx"])
+            first["vy"] = -float(first["vy"])
+            second["vx"] = -float(second["vx"])
+            second["vy"] = -float(second["vy"])
+
+            # Push apart on the minimum overlap axis to reduce collision jitter.
+            fx = float(first["x"])
+            fy = float(first["y"])
+            fsize = float(first["size"])
+            sx = float(second["x"])
+            sy = float(second["y"])
+            ssize = float(second["size"])
+
+            overlap_x = min(fx + fsize, sx + ssize) - max(fx, sx)
+            overlap_y = min(fy + fsize, sy + ssize) - max(fy, sy)
+
+            if overlap_x <= overlap_y:
+                separation = overlap_x / 2.0
+                if fx < sx:
+                    first["x"] = fx - separation
+                    second["x"] = sx + separation
+                else:
+                    first["x"] = fx + separation
+                    second["x"] = sx - separation
+            else:
+                separation = overlap_y / 2.0
+                if fy < sy:
+                    first["y"] = fy - separation
+                    second["y"] = sy + separation
+                else:
+                    first["y"] = fy + separation
+                    second["y"] = sy - separation
 
 
 def handle_events() -> bool:
@@ -84,6 +152,8 @@ def update_squares(squares: list[dict[str, object]]) -> None:
         elif square["y"] + size >= HEIGHT:
             square["y"] = HEIGHT - size
             square["vy"] = -square["vy"]
+
+    resolve_square_collisions(squares)
 
 
 def draw_scene(screen: pygame.Surface, squares: list[dict[str, object]]) -> None:
