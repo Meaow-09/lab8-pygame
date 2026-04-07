@@ -32,9 +32,9 @@ def init_game() -> tuple[pygame.Surface, pygame.time.Clock]:
     return screen, clock
 
 
-def create_squares(count: int) -> list[dict[str, object]]:
+def create_squares(count: int) -> list[dict]:
     """Create squares at random positions with random non-zero velocities."""
-    squares: list[dict[str, object]] = []
+    squares = []
 
     for _ in range(count):
         size = random.randint(MIN_SQUARE_SIZE, MAX_SQUARE_SIZE)
@@ -63,76 +63,19 @@ def create_squares(count: int) -> list[dict[str, object]]:
     return squares
 
 
-def squares_overlap(a: dict[str, object], b: dict[str, object]) -> bool:
-    """Return True when two square hitboxes intersect."""
-    ax = float(a["x"])
-    ay = float(a["y"])
-    asize = float(a["size"])
-    bx = float(b["x"])
-    by = float(b["y"])
-    bsize = float(b["size"])
-
-    return ax < bx + bsize and ax + asize > bx and ay < by + bsize and ay + asize > by
-
-
-def resolve_square_collisions(squares: list[dict[str, object]]) -> None:
-    """Make squares change direction when colliding with each other."""
-    for i in range(len(squares)):
-        for j in range(i + 1, len(squares)):
-            first = squares[i]
-            second = squares[j]
-
-            if not squares_overlap(first, second):
-                continue
-
-            first["vx"] = -float(first["vx"])
-            first["vy"] = -float(first["vy"])
-            second["vx"] = -float(second["vx"])
-            second["vy"] = -float(second["vy"])
-
-            # Push apart on the minimum overlap axis to reduce collision jitter.
-            fx = float(first["x"])
-            fy = float(first["y"])
-            fsize = float(first["size"])
-            sx = float(second["x"])
-            sy = float(second["y"])
-            ssize = float(second["size"])
-
-            overlap_x = min(fx + fsize, sx + ssize) - max(fx, sx)
-            overlap_y = min(fy + fsize, sy + ssize) - max(fy, sy)
-
-            if overlap_x <= overlap_y:
-                separation = overlap_x / 2.0
-                if fx < sx:
-                    first["x"] = fx - separation
-                    second["x"] = sx + separation
-                else:
-                    first["x"] = fx + separation
-                    second["x"] = sx - separation
-            else:
-                separation = overlap_y / 2.0
-                if fy < sy:
-                    first["y"] = fy - separation
-                    second["y"] = sy + separation
-                else:
-                    first["y"] = fy + separation
-                    second["y"] = sy - separation
-
 
 def handle_events() -> bool:
     """Process user input and return whether the app should keep running."""
-    running = True
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
+            return False
         elif event.type == pygame.KEYDOWN and event.key in (pygame.K_ESCAPE, pygame.K_q):
-            running = False
+            return False
 
-    return running
+    return True
 
 
-def update_squares(squares: list[dict[str, object]]) -> None:
+def update_squares(squares: list[dict]) -> None:
     """Move each square and bounce it when it reaches a screen edge."""
     for square in squares:
         size = int(square["size"])
@@ -153,10 +96,9 @@ def update_squares(squares: list[dict[str, object]]) -> None:
             square["y"] = HEIGHT - size
             square["vy"] = -square["vy"]
 
-    resolve_square_collisions(squares)
 
 
-def draw_scene(screen: pygame.Surface, squares: list[dict[str, object]]) -> None:
+def draw_scene(screen: pygame.Surface, squares: list[dict]) -> None:
     """Render all game objects."""
     screen.fill(BACKGROUND_COLOR)
 
@@ -167,7 +109,7 @@ def draw_scene(screen: pygame.Surface, squares: list[dict[str, object]]) -> None
     pygame.display.flip()
 
 
-def run_loop(screen: pygame.Surface, clock: pygame.time.Clock, squares: list[dict[str, object]]) -> None:
+def run_loop(screen: pygame.Surface, clock: pygame.time.Clock, squares: list[dict]) -> None:
     """Main loop that coordinates events, updates, and rendering."""
     running = True
     while running:
