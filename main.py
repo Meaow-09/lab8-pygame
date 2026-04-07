@@ -13,6 +13,15 @@ MIN_SQUARE_SIZE = 20
 MAX_SQUARE_SIZE = 70
 
 
+def init_game() -> tuple[pygame.Surface, pygame.time.Clock]:
+    """Initialize pygame and create main objects."""
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Moving Squares Skeleton")
+    clock = pygame.time.Clock()
+    return screen, clock
+
+
 def speed_from_size(size: int) -> float:
     """Map smaller sizes to faster speed and bigger sizes to slower speed."""
     size_range = MAX_SQUARE_SIZE - MIN_SQUARE_SIZE
@@ -21,15 +30,6 @@ def speed_from_size(size: int) -> float:
 
     normalized = (size - MIN_SQUARE_SIZE) / size_range
     return MAX_SPEED - normalized * (MAX_SPEED - MIN_SPEED)
-
-
-def init_game() -> tuple[pygame.Surface, pygame.time.Clock]:
-    """Initialize pygame and create main objects."""
-    pygame.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Moving Squares Skeleton")
-    clock = pygame.time.Clock()
-    return screen, clock
 
 
 def create_squares(count: int) -> list[dict]:
@@ -63,7 +63,6 @@ def create_squares(count: int) -> list[dict]:
     return squares
 
 
-
 def handle_events() -> bool:
     """Process user input and return whether the app should keep running."""
     for event in pygame.event.get():
@@ -75,10 +74,43 @@ def handle_events() -> bool:
     return True
 
 
+def calculator(square: dict, list_squares):
+    direction = (0, 0)
+    min_distance = 0.0
+    for other in list_squares:
+        x = square["x"] - other[0]
+        y = square["y"] - other[1]
+        distance = (x ** 2 + y ** 2) ** 0.5
+        if distance != 0:
+            if distance <= min_distance:
+                min_distance = distance
+                direction = (x, y)
+    if min_distance <= 5 * square["size"] and direction[0] != 0 and direction[1] != 0:
+        return direction
+    else:
+        return None
+
+
+def flee(square: dict, list_squares: list):
+    if square["size"] > (MAX_SQUARE_SIZE + MIN_SQUARE_SIZE) / 2:
+        pass
+    else:
+        speed = (square["vx"] ** 2 + square["vy"] ** 2) ** 0.5
+        direction = calculator(square, list_squares)
+        if direction is not None:
+            speed_direction = (direction[0] ** 2 + direction[1] ** 2) ** 0.5
+            square["vx"] = direction[0] / speed_direction * speed * -1
+            square["vy"] = direction[1] / speed_direction * speed * -1
+    return square
+
+
 def update_squares(squares: list[dict]) -> None:
     """Move each square and bounce it when it reaches a screen edge."""
+    list_squares = []
     for square in squares:
+        list_squares.append((square["x"], square["y"]))
         size = int(square["size"])
+
         square["x"] += square["vx"]
         square["y"] += square["vy"]
 
@@ -95,7 +127,9 @@ def update_squares(squares: list[dict]) -> None:
         elif square["y"] + size >= HEIGHT:
             square["y"] = HEIGHT - size
             square["vy"] = -square["vy"]
-
+    # print(list_squares)
+    for square in squares:
+        flee(square, list_squares)
 
 
 def draw_scene(screen: pygame.Surface, squares: list[dict]) -> None:
