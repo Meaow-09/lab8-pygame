@@ -2,10 +2,10 @@ import random
 import math
 import pygame
 
-WIDTH = 1000
-HEIGHT = 1000
+WIDTH = 2000
+HEIGHT = 1500
 FPS = 60
-SQUARE_COUNT = 20
+SQUARE_COUNT = 50
 BACKGROUND_COLOR = (20, 20, 20)
 MIN_SPEED = 1.0
 MAX_SPEED = 3.0
@@ -144,9 +144,11 @@ def update_squares(squares: list[dict]) -> None:
         flee(square, list_squares, square_index)
 
 
-def draw_scene(screen: pygame.Surface, squares: list[dict]) -> None:
+def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> None:
     """Render all game objects."""
     screen.fill(BACKGROUND_COLOR)
+    text = hud_font.render(f"FPS: {fps:.1f}", True, (240, 240, 240))
+    screen.blit(text, (10, 10))
 
     for square in squares:
         rect = pygame.Rect(int(square["x"]), int(square["y"]), int(square["size"]), int(square["size"]))
@@ -159,9 +161,12 @@ def run_loop(screen: pygame.Surface, clock: pygame.time.Clock, squares: list[dic
     """Main loop that coordinates events, updates, and rendering."""
     running = True
     while running:
+        hud_font = pygame.font.SysFont(None, 28)
+        fps = clock.get_fps()
+
         running = handle_events()
         update_squares(squares)
-        draw_scene(screen, squares)
+        draw_scene(screen, squares, hud_font, fps)
         clock.tick(FPS)
 
 
