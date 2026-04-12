@@ -1,6 +1,6 @@
 # lab8-pygame
 
-Simple Pygame animation that shows 10 squares moving and bouncing on screen.
+Simple Pygame animation with randomly sized, randomly colored squares that move around the screen.
 
 ## Features
 
@@ -8,6 +8,8 @@ Simple Pygame animation that shows 10 squares moving and bouncing on screen.
 - Each square gets a random size.
 - Each square gets a different random color.
 - Each square moves with random speed and direction.
+- Smaller squares move faster than bigger squares.
+- Smaller squares can flee away from nearby bigger squares.
 - Squares bounce on window edges.
 
 ## Requirements

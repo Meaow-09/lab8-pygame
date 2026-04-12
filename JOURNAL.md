@@ -78,3 +78,23 @@
 - **Socratic Mode**: OFF
 - **Changes Made**: Removed squares_overlap() and resolve_square_collisions() functions completely; simplified handle_events() by removing unnecessary 'running' variable and returning directly; standardized type hints from list[dict[str, object]] to list[dict] for consistency.
 - **Context and Reasons for Changes**: User requested removal of collision detection between squares to reduce complexity. Simplified handle_events() control flow and type hints for cleaner, more maintainable code while preserving core functionality (size-based speed variation, wall bouncing).
+### **New Interaction**
+- **Agent Version**: 2.2
+- **Date**: 12-04-2026 18:35
+- **User**: Meaow_09@outlook.com
+- **Prompt**: I added a flee function for small squares to flee away if big ones are too clse to them, but it's not working, check for me
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5-Codex
+- **Socratic Mode**: ON
+- **Changes Made**: Fixed flee logic in `main.py` so squares skip their own snapshot, only react to larger nearby squares, and use center-based distance with a minimum flee radius.
+- **Context and Reasons for Changes**: The original flee check was comparing against stale self positions and used a weak top-left distance test, which prevented the intended repulsion behavior.
+### **New Interaction**
+- **Agent Version**: 2.2
+- **Date**: 12-04-2026 18:42
+- **User**: Meaow_09@outlook.com
+- **Prompt**: update the reademe for me
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5-Codex
+- **Socratic Mode**: ON
+- **Changes Made**: Updated `README.md` to describe the current game behavior, including size-based speed and the flee mechanic; no source code changes were made.
+- **Context and Reasons for Changes**: The request was documentation-focused, so the README needed to match the current gameplay features and note the new flee behavior.
