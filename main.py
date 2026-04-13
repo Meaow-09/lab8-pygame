@@ -1,7 +1,6 @@
 import random
 import math
 import pygame
-
 WIDTH = 2000
 HEIGHT = 1500
 FPS = 60

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab8 Pygame - Code Explorer</title>
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #171b2e;
+      --panel-2: #1f2540;
+      --text: #e9ecff;
+      --muted: #aeb6dd;
+      --accent: #6fb3ff;
+      --ok: #4bd38b;
+      --warn: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #0c1020 0%, #0f1220 100%);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      padding: 28px 22px 10px;
+      border-bottom: 1px solid #2a3158;
+      background: rgba(15, 18, 32, 0.9);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(8px);
+    }
+    h1 { margin: 0; font-size: 1.5rem; }
+    .subtitle { color: var(--muted); margin-top: 8px; }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid #28305a;
+      border-radius: 12px;
+      padding: 14px;
+    }
+    h2 { margin: 0 0 10px; font-size: 1.1rem; color: #d7e0ff; }
+    h3 { margin: 14px 0 8px; font-size: 1rem; color: #c6d4ff; }
+    code {
+      background: var(--panel-2);
+      border: 1px solid #2f3868;
+      border-radius: 6px;
+      padding: 2px 6px;
+      color: #d5e5ff;
+    }
+    pre {
+      overflow: auto;
+      border-radius: 10px;
+      border: 1px solid #2d3563;
+      background: #141a34;
+      padding: 10px;
+      margin: 8px 0;
+    }
+    ul { margin: 8px 0 8px 18px; }
+    li { margin: 4px 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+    }
+    .card {
+      background: var(--panel-2);
+      border: 1px solid #323c70;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .metric {
+      display: inline-block;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: #1a2a42;
+      border: 1px solid #2f4b74;
+      color: #cce4ff;
+      font-size: 0.9rem;
+    }
+    .ok { border-color: #285b44; color: #b2f2cf; background: #152b22; }
+    .warn { border-color: #665620; color: #ffe39b; background: #2d2817; }
+    a { color: var(--accent); }
+    .small { font-size: 0.92rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Code Explorer: <code>main.py</code></h1>
+    <div class="subtitle">Interactive learning dashboard for the Pygame moving squares simulation.</div>
+  </header>
+
+  <main>
+    <section>
+      <h2>Architecture Overview</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Runtime Layers</h3>
+          <ul>
+            <li><strong>Setup:</strong> constants + <code>init_game()</code> + <code>create_squares()</code></li>
+            <li><strong>Loop control:</strong> <code>run_loop()</code> and <code>handle_events()</code></li>
+            <li><strong>Simulation:</strong> <code>update_squares()</code>, <code>flee()</code>, <code>calculator()</code></li>
+            <li><strong>Rendering:</strong> <code>draw_scene()</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Data Model</h3>
+          <ul>
+            <li>Each square is a <code>dict</code>: <code>x, y, size, vx, vy, color</code></li>
+            <li>Main state is <code>squares: list[dict]</code></li>
+            <li>One simulation step: move -> bounce -> compute flee vector</li>
+            <li>Behavior coupling: flee logic reads a static per-frame snapshot</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Call Graph</h2>
+      <pre class="mermaid">graph TD
+        A[main] --> B[init_game]
+        A --> C[create_squares]
+        A --> D[run_loop]
+        D --> E[handle_events]
+        D --> F[update_squares]
+        D --> G[draw_scene]
+        F --> H[flee]
+        H --> I[calculator]
+      </pre>
+      <div class="small">This highlights orchestration: <code>run_loop()</code> coordinates input, simulation, and draw every frame.</div>
+    </section>
+
+    <section>
+      <h2>Frame Loop and Data Flow</h2>
+      <pre class="mermaid">flowchart LR
+        Start([Frame Start]) --> Events[handle_events]
+        Events -->|running True| Update[update_squares]
+        Update --> Move[Move by vx/vy]
+        Move --> Bounce[Clamp and bounce on edges]
+        Bounce --> FleePass[flee for each square]
+        FleePass --> Draw[draw_scene]
+        Draw --> Tick[clock.tick(FPS)]
+        Tick --> Start
+        Events -->|running False| Exit([Exit loop])
+      </pre>
+      <pre class="mermaid">flowchart TD
+        S[square dict] --> M[x,y,vx,vy,size,color]
+        Snapshot[list_squares tuples] --> Calc[calculator]
+        Calc --> Dir[direction vector]
+        Dir --> Flee[flee normalizes to keep speed]
+        Flee --> S
+      </pre>
+    </section>
+
+    <section>
+      <h2>Function-by-Function Notes</h2>
+      <div class="grid">
+        <div class="card"><strong>init_game</strong><br />Bootstraps Pygame display and clock. Good separation of setup concerns.</div>
+        <div class="card"><strong>speed_from_size</strong><br />Linear mapping from size to speed. Includes defensive fallback when range is invalid.</div>
+        <div class="card"><strong>create_squares</strong><br />Random spawn position, color, angle-based velocity. Produces diverse initial conditions.</div>
+        <div class="card"><strong>handle_events</strong><br />Clean quit path: window close, Escape, and Q key.</div>
+        <div class="card"><strong>calculator</strong><br />Finds nearest larger threat in flee radius and returns away-vector direction.</div>
+        <div class="card"><strong>flee</strong><br />Only smaller squares flee; keeps original speed magnitude while changing heading.</div>
+        <div class="card"><strong>update_squares</strong><br />Moves squares, applies boundary bounce, then computes behavior phase.</div>
+        <div class="card"><strong>draw_scene</strong><br />Draws background, FPS HUD, and all rectangles, then flips display.</div>
+        <div class="card"><strong>run_loop</strong><br />Main scheduler. Improvement candidate: move font creation outside while-loop.</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Pattern and Quality Analysis</h2>
+      <span class="metric ok">Game Loop Pattern: strong</span>
+      <span class="metric warn">Type Safety: medium</span>
+      <span class="metric warn">Data Structure Clarity: medium</span>
+      <span class="metric ok">Behavior Decomposition: good</span>
+      <ul>
+        <li>Good modular decomposition into setup, update, and render phases.</li>
+        <li>Using <code>dict</code> for squares is flexible but fragile for typos and missing keys.</li>
+        <li><code>calculator()</code> reads tuple snapshots while other code uses dicts; mixed representations increase cognitive load.</li>
+        <li><code>flee()</code> has an empty branch (<code>pass</code>) that can be simplified by early return.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Complexity and Performance Notes</h2>
+      <ul>
+        <li>Per frame complexity is roughly <code>O(n^2)</code> due to threat checks for each square.</li>
+        <li>At <code>SQUARE_COUNT = 50</code>, this is usually fine; at larger counts, neighbor partitioning can help.</li>
+        <li>Font allocation is inside the hot loop; cache with one-time <code>pygame.font.SysFont(None, 28)</code>.</li>
+        <li>Distance uses sqrt; compare squared distance to avoid repeated square roots in tight loops.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Improvement Checklist</h2>
+      <ul>
+        <li>Replace square dicts with a typed <code>@dataclass</code> (clear fields, safer refactors).</li>
+        <li>Add return type hints for <code>calculator()</code> and <code>flee()</code>.</li>
+        <li>Unify square representation (all dict or all dataclass/tuple, not mixed).</li>
+        <li>Move HUD font creation outside loop to reduce per-frame allocations.</li>
+        <li>Add tiny unit tests for <code>speed_from_size()</code> and flee direction edge cases.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Curated Learning Links</h2>
+      <ul>
+        <li><a href="https://www.pygame.org/docs/" target="_blank" rel="noreferrer">Pygame Official Documentation</a></li>
+        <li><a href="https://realpython.com/pygame-a-primer/" target="_blank" rel="noreferrer">Pygame Primer (Real Python)</a></li>
+        <li><a href="https://docs.python.org/3/library/math.html" target="_blank" rel="noreferrer">Python math module reference</a></li>
+        <li><a href="https://peps.python.org/pep-0008/" target="_blank" rel="noreferrer">PEP 8 Style Guide</a></li>
+        <li><a href="https://refactoring.guru/design-patterns/game-loop" target="_blank" rel="noreferrer">Game Loop pattern explainer</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+  </script>
+</body>
+</html>
