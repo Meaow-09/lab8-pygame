@@ -1,6 +1,7 @@
 import random
 import math
 import pygame
+
 WIDTH = 2000
 HEIGHT = 1500
 FPS = 60
@@ -79,7 +80,7 @@ def calculator(square: dict, list_squares: list, square_index: int):
     square_center_x = square["x"] + square["size"] / 2
     square_center_y = square["y"] + square["size"] / 2
     direction = None
-    min_distance = WIDTH + HEIGHT
+    min_distance = (WIDTH ** 2 + HEIGHT ** 2) ** 0.5
 
     for other_index, other in enumerate(list_squares):
         if other_index == square_index:
@@ -104,16 +105,18 @@ def calculator(square: dict, list_squares: list, square_index: int):
 
 
 def flee(square: dict, list_squares: list, square_index: int):
-    if square["size"] > (MAX_SQUARE_SIZE + MIN_SQUARE_SIZE) / 2:
-        pass
-    else:
-        speed = (square["vx"] ** 2 + square["vy"] ** 2) ** 0.5
-        direction = calculator(square, list_squares, square_index)
-        if direction is not None:
-            speed_direction = (direction[0] ** 2 + direction[1] ** 2) ** 0.5
-            if speed_direction > 0:
-                square["vx"] = direction[0] / speed_direction * speed
-                square["vy"] = direction[1] / speed_direction * speed
+    speed = (square["vx"] ** 2 + square["vy"] ** 2) ** 0.5
+    direction = calculator(square, list_squares, square_index)
+    if direction is not None:
+        speed_direction = (direction[0] ** 2 + direction[1] ** 2) ** 0.5
+        # if square["size"] > (MAX_SQUARE_SIZE + MIN_SQUARE_SIZE) / 2:
+        #     if speed_direction > 0:
+        #         square["vx"] = direction[0] / speed_direction * speed * -1
+        #         square["vy"] = direction[1] / speed_direction * speed * -1
+        # else:
+        if speed_direction > 0:
+            square["vx"] = direction[0] / speed_direction * speed
+            square["vy"] = direction[1] / speed_direction * speed
 
 
 def update_squares(squares: list[dict]) -> None:
