@@ -5,17 +5,17 @@ import pygame
 WIDTH = 2000
 HEIGHT = 1500
 FPS = 60
-SQUARE_COUNT = 50
+SQUARE_COUNT = 25
 BACKGROUND_COLOR = (20, 20, 20)
 MIN_SPEED = 1.0
-MAX_SPEED = 3.0
-MIN_SQUARE_SIZE = 20
-MAX_SQUARE_SIZE = 70
-MIN_FLEE_DISTANCE = 20
+MAX_SPEED = 5.0
+MIN_SQUARE_SIZE = 10
+MAX_SQUARE_SIZE = 75
+MIN_FLEE_DISTANCE = 30
 
 
 def init_game() -> tuple[pygame.Surface, pygame.time.Clock]:
-    """Initialize pygame and create main objects."""
+    """Initialize Pygame and return the screen surface and frame clock."""
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Moving Squares Skeleton")
@@ -24,7 +24,7 @@ def init_game() -> tuple[pygame.Surface, pygame.time.Clock]:
 
 
 def speed_from_size(size: int) -> float:
-    """Map smaller sizes to faster speed and bigger sizes to slower speed."""
+    """Map a square size to a speed value: smaller squares move faster."""
     size_range = MAX_SQUARE_SIZE - MIN_SQUARE_SIZE
     if size_range <= 0:
         return MIN_SPEED
@@ -34,7 +34,7 @@ def speed_from_size(size: int) -> float:
 
 
 def create_squares(count: int) -> list[dict]:
-    """Create squares at random positions with random non-zero velocities."""
+    """Create square dictionaries with random size, color, position, and velocity."""
     squares = []
 
     for _ in range(count):
@@ -65,7 +65,7 @@ def create_squares(count: int) -> list[dict]:
 
 
 def handle_events() -> bool:
-    """Process user input and return whether the app should keep running."""
+    """Process user input and return False when the user asks to quit."""
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             return False
@@ -75,8 +75,8 @@ def handle_events() -> bool:
     return True
 
 
-def calculator(square: dict, list_squares: list, square_index: int):
-    """Return the direction vector away from the closest larger square."""
+def find_flee_direction(square: dict, list_squares: list, square_index: int):
+    """Return a vector pointing away from the closest larger square nearby."""
     square_center_x = square["x"] + square["size"] / 2
     square_center_y = square["y"] + square["size"] / 2
     direction = None
@@ -105,8 +105,9 @@ def calculator(square: dict, list_squares: list, square_index: int):
 
 
 def flee(square: dict, list_squares: list, square_index: int):
+    """Adjust a square's velocity so it keeps its speed while fleeing."""
     speed = (square["vx"] ** 2 + square["vy"] ** 2) ** 0.5
-    direction = calculator(square, list_squares, square_index)
+    direction = find_flee_direction(square, list_squares, square_index)
     if direction is not None:
         speed_direction = (direction[0] ** 2 + direction[1] ** 2) ** 0.5
         # if square["size"] > (MAX_SQUARE_SIZE + MIN_SQUARE_SIZE) / 2:
@@ -120,7 +121,8 @@ def flee(square: dict, list_squares: list, square_index: int):
 
 
 def update_squares(squares: list[dict]) -> None:
-    """Move each square and bounce it when it reaches a screen edge."""
+    """Move the squares, bounce on edges, then apply flee behavior."""
+    # Snapshot the current positions first so flee checks use the same frame state.
     list_squares = [(square["x"], square["y"], square["size"]) for square in squares]
 
     for square in squares:
@@ -147,7 +149,7 @@ def update_squares(squares: list[dict]) -> None:
 
 
 def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> None:
-    """Render all game objects."""
+    """Clear the screen, draw the HUD, and render every square."""
     screen.fill(BACKGROUND_COLOR)
     text = hud_font.render(f"FPS: {fps:.1f}", True, (240, 240, 240))
     screen.blit(text, (10, 10))
@@ -160,12 +162,11 @@ def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> No
 
 
 def run_loop(screen: pygame.Surface, clock: pygame.time.Clock, squares: list[dict]) -> None:
-    """Main loop that coordinates events, updates, and rendering."""
+    """Run the main frame loop: input, update, draw, then tick the clock."""
     running = True
+    hud_font = pygame.font.SysFont(None, 28)
     while running:
-        hud_font = pygame.font.SysFont(None, 28)
         fps = clock.get_fps()
-
         running = handle_events()
         update_squares(squares)
         draw_scene(screen, squares, hud_font, fps)
@@ -173,7 +174,7 @@ def run_loop(screen: pygame.Surface, clock: pygame.time.Clock, squares: list[dic
 
 
 def main() -> None:
-    """Program entrypoint."""
+    """Program entrypoint for the square animation demo."""
     screen, clock = init_game()
     squares = create_squares(SQUARE_COUNT)
 
