@@ -23,3 +23,9 @@ I don't know how to count the distance between each squares, and we should do it
 Flee direction
 
 <img src="./assets/image-20260407143542844.png" alt="image-20260407143542844" style="zoom:50%;" />
+
+## Part 3
+
+### Life Span + Rebirth Feature
+
+> Lab 10 - 1 P5

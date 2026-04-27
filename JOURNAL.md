@@ -150,3 +150,33 @@
 - **Socratic Mode**: ON
 - **Changes Made**: Updated `docs/code_explorer.html` to reflect code changes: renamed function `calculator` to `find_flee_direction`, updated review items and type hints documentation, replaced resolved README/code mismatch issue with font reuse opportunity, added dead code comment issue.
 - **Context and Reasons for Changes**: The main.py code changed with function renaming and docstring updates, so the code explorer dashboard needed to reflect the current source.
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 27-04-2026 11:00
+- **User**: Meaow_09@outlook.com
+- **Prompt**: i didn't saw those files, please generate again with #file:architecture-graphs.agent.md agent
+- **CoPilot Mode**: Agent
+- **CoPilot Model**: GPT-5-Codex
+- **Socratic Mode**: ON
+- **Changes Made**: Regenerated `docs/architecture.md` and `docs/architecture.html` from `main.py` with Mermaid dependency, runtime flow, function call, and primary sequence diagrams; attempted `architecture-graphs` subagent first but it could not access local files in this session; verified output files exist with non-zero size.
+- **Context and Reasons for Changes**: User reported not seeing generated architecture files and explicitly requested regeneration using the architecture agent workflow.
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 27-04-2026 11:26
+- **User**: Meaow_09@outlook.com
+- **Prompt**: Please generate the flash quiz site for this project
+- **CoPilot Mode**: Agent
+- **CoPilot Model**: GPT-5-Codex
+- **Socratic Mode**: ON
+- **Changes Made**: Generated `docs/study_tool.html` (template version 2.0) as a single-file flashcard + quiz study tool from `main.py`, including deterministic data blocks (`flashcards`, `quizData`), 15 medium questions with traceability/evidence anchors, required static quiz containers, flip animation/accessibility, runtime DOM validator, and two-phase quiz DOM setup/state updates.
+- **Context and Reasons for Changes**: User requested a flash quiz site; the tool was generated in the resolved project root with constraints for deterministic structure, project-specific pedagogy, and robust interactive behavior.
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 27-04-2026 11:33
+- **User**: Meaow_09@outlook.com
+- **Prompt**: did you use the #file:flash-quiz-site.agent.md agent? if not, generate another one for me.
+- **CoPilot Mode**: Agent
+- **CoPilot Model**: GPT-5-Codex
+- **Socratic Mode**: ON
+- **Changes Made**: Invoked the `flash-quiz-site` subagent and regenerated `docs/study_tool.html`; then validated locally that template marker `STUDY_TOOL_TEMPLATE_VERSION = "2.0"` exists, question IDs count is exactly 15, required quiz/flashcard containers exist, and file size is non-zero.
+- **Context and Reasons for Changes**: User asked whether the dedicated flash-quiz agent was used and requested another generation if not, so regeneration was performed through the specialized agent workflow and verified.

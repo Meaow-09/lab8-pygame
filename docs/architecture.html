@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>lab8-pygame Architecture</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --card: #171a21;
+      --text: #e6e9ef;
+      --muted: #b2b9c6;
+      --border: #2a2f3a;
+      --accent: #6aa9ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .container {
+      width: min(1100px, 94vw);
+      margin: 0 auto;
+      padding: 2rem 0 3rem;
+    }
+
+    h1, h2 { line-height: 1.25; }
+
+    h1 {
+      font-size: clamp(1.6rem, 2.2vw, 2.2rem);
+      margin: 0 0 0.5rem;
+    }
+
+    .intro {
+      color: var(--muted);
+      margin: 0 0 1.4rem;
+    }
+
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+    }
+
+    .section h2 {
+      margin-top: 0.1rem;
+      margin-bottom: 0.4rem;
+      font-size: 1.2rem;
+    }
+
+    .section p {
+      margin-top: 0;
+      color: var(--muted);
+    }
+
+    .assumptions {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      margin-top: 1rem;
+    }
+
+    .assumptions h2 { margin-top: 0; }
+
+    .assumptions li { margin: 0.3rem 0; }
+
+    code {
+      color: var(--accent);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>lab8-pygame Architecture</h1>
+    <p class="intro">Architecture generated from <code>main.py</code> using Mermaid diagrams.</p>
+
+    <section class="section">
+      <h2>1) Module Dependency Graph</h2>
+      <div class="mermaid">
+flowchart LR
+    subgraph "Project Module"
+        M["main.py"]
+    end
+
+    subgraph "Standard Library"
+        R["random"]
+        T["math"]
+    end
+
+    subgraph "Third-Party"
+        P["pygame"]
+    end
+
+    M --> R
+    M --> T
+    M --> P
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>2) High-Level Runtime Flow</h2>
+      <div class="mermaid">
+flowchart TD
+    A["Program Start"] --> B["main()"]
+    B --> C["init_game()"]
+    B --> D["create_squares(SQUARE_COUNT)"]
+    C --> E["run_loop(screen, clock, squares)"]
+    D --> E
+
+    subgraph "Per Frame"
+        F["clock.get_fps()"] --> G["handle_events()"]
+        G --> H["update_squares(squares)"]
+        H --> I["draw_scene(screen, squares, hud_font, fps)"]
+        I --> J["clock.tick(FPS)"]
+    end
+
+    E --> F
+    J --> K{"running == True?"}
+    K -->|"Yes"| F
+    K -->|"No"| L["pygame.quit()"]
+    L --> M["Program End"]
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>3) Function-Level Call Graph</h2>
+      <div class="mermaid">
+flowchart TD
+    A["main"] --> B["init_game"]
+    A --> C["create_squares"]
+    A --> D["run_loop"]
+    A --> E["pygame.quit"]
+
+    C --> F["speed_from_size"]
+    C --> G["random.randint"]
+    C --> H["random.uniform"]
+    C --> I["math.cos"]
+    C --> J["math.sin"]
+
+    D --> K["pygame.font.SysFont"]
+    D --> L["clock.get_fps"]
+    D --> M["handle_events"]
+    D --> N["update_squares"]
+    D --> O["draw_scene"]
+    D --> P["clock.tick"]
+
+    M --> Q["pygame.event.get"]
+
+    N --> R["flee"]
+    R --> S["find_flee_direction"]
+
+    O --> T["screen.fill"]
+    O --> U["hud_font.render"]
+    O --> V["screen.blit"]
+    O --> W["pygame.Rect"]
+    O --> X["pygame.draw.rect"]
+    O --> Y["pygame.display.flip"]
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>4) Primary Execution Sequence Diagram</h2>
+      <div class="mermaid">
+sequenceDiagram
+    participant U as "User"
+    participant App as "Python Process"
+    participant Main as "main()"
+    participant Init as "init_game()"
+    participant Create as "create_squares()"
+    participant Loop as "run_loop()"
+    participant Events as "handle_events()"
+    participant Update as "update_squares()"
+    participant Flee as "flee()"
+    participant Find as "find_flee_direction()"
+    participant Draw as "draw_scene()"
+    participant PG as "pygame"
+
+    U->>App: "Run script"
+    App->>Main: "Enter main()"
+    Main->>Init: "Initialize display + clock"
+    Init->>PG: "init, set_mode, set_caption, Clock"
+    PG-->>Init: "screen, clock ready"
+    Init-->>Main: "screen, clock"
+
+    Main->>Create: "Create squares"
+    Create->>PG: "No direct call"
+    Create-->>Main: "squares list"
+
+    Main->>Loop: "Start frame loop"
+
+    loop "While running is True"
+        Loop->>Events: "Poll input"
+        Events->>PG: "event.get()"
+        alt "QUIT or ESC/Q pressed"
+            Events-->>Loop: "False"
+        else "No exit event"
+            Events-->>Loop: "True"
+        end
+
+        Loop->>Update: "Move and bounce squares"
+        loop "For each square"
+            Update->>Update: "Apply velocity + boundary checks"
+        end
+        loop "For each square (behavior pass)"
+            Update->>Flee: "Adjust velocity when threatened"
+            Flee->>Find: "Find nearest larger square in range"
+            Find-->>Flee: "direction or None"
+            Flee-->>Update: "updated velocity"
+        end
+        Update-->>Loop: "state updated"
+
+        Loop->>Draw: "Render frame"
+        Draw->>PG: "fill, text render, rect draw, display.flip"
+        Draw-->>Loop: "frame presented"
+
+        Loop->>PG: "clock.tick(FPS)"
+    end
+
+    Loop-->>Main: "Exit loop"
+    Main->>PG: "pygame.quit()"
+    Main-->>App: "Process exits"
+      </div>
+    </section>
+
+    <section class="assumptions">
+      <h2>Assumptions</h2>
+      <ul>
+        <li>Architecture is inferred from <code>main.py</code> only.</li>
+        <li>No additional local runtime modules are referenced by imports in the current code.</li>
+        <li>Primary path is startup, repeated frame loop, and graceful quit from window close or <code>Esc</code>/<code>Q</code>.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "dark" });
+  </script>
+</body>
+</html>
+
