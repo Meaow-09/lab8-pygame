@@ -29,3 +29,7 @@ Flee direction
 ### Life Span + Rebirth Feature
 
 > Lab 10 - 1 P5
+
+- Generate a random life time when generating squares (in a certain range)
+- For each loop, life time -= FPS/1000, if <=0 die
+- If anyone dead, generate a new square.

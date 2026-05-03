@@ -1,5 +1,5 @@
-import math
 import random
+import math
 import pygame
 
 WIDTH = 1200
@@ -7,9 +7,8 @@ HEIGHT = 900
 FPS = 60
 SQUARE_COUNT = 20
 BACKGROUND_COLOR = (20, 20, 20)
-# Speed is now in pixels per second (multiplied by FPS to convert from frame-rate dependent).
-MIN_SPEED = 60.0  # 1.0 pixels/frame * 60 fps = 60 pixels/second
-MAX_SPEED = 300.0  # 5.0 pixels/frame * 60 fps = 300 pixels/second
+MIN_SPEED = 1.0
+MAX_SPEED = 5.0
 MIN_SQUARE_SIZE = 10
 MAX_SQUARE_SIZE = 75
 MIN_FLEE_DISTANCE = 30
@@ -65,25 +64,6 @@ def create_squares(count: int) -> list[dict]:
     return squares
 
 
-def bounce_square_on_edges(square: dict) -> None:
-    """Keep a square inside the window and reverse direction on collision."""
-    size = int(square["size"])
-
-    if square["x"] <= 0:
-        square["x"] = 0
-        square["vx"] = abs(square["vx"])
-    elif square["x"] + size >= WIDTH:
-        square["x"] = WIDTH - size
-        square["vx"] = -square["vx"]
-
-    if square["y"] <= 0:
-        square["y"] = 0
-        square["vy"] = abs(square["vy"])
-    elif square["y"] + size >= HEIGHT:
-        square["y"] = HEIGHT - size
-        square["vy"] = -square["vy"]
-
-
 def handle_events() -> bool:
     """Process user input and return False when the user asks to quit."""
     for event in pygame.event.get():
@@ -95,14 +75,14 @@ def handle_events() -> bool:
     return True
 
 
-def find_flee_direction(square: dict, square_snapshots: list, square_index: int):
+def find_flee_direction(square: dict, list_squares: list, square_index: int):
     """Return a vector pointing away from the closest larger square nearby."""
     square_center_x = square["x"] + square["size"] / 2
     square_center_y = square["y"] + square["size"] / 2
     direction = None
     min_distance = (WIDTH ** 2 + HEIGHT ** 2) ** 0.5
 
-    for other_index, other in enumerate(square_snapshots):
+    for other_index, other in enumerate(list_squares):
         if other_index == square_index:
             continue
 
@@ -124,10 +104,10 @@ def find_flee_direction(square: dict, square_snapshots: list, square_index: int)
     return direction
 
 
-def flee(square: dict, square_snapshots: list, square_index: int):
+def flee(square: dict, list_squares: list, square_index: int):
     """Adjust a square's velocity so it keeps its speed while fleeing."""
     speed = (square["vx"] ** 2 + square["vy"] ** 2) ** 0.5
-    direction = find_flee_direction(square, square_snapshots, square_index)
+    direction = find_flee_direction(square, list_squares, square_index)
     if direction is not None:
         speed_direction = (direction[0] ** 2 + direction[1] ** 2) ** 0.5
         # if square["size"] > (MAX_SQUARE_SIZE + MIN_SQUARE_SIZE) / 2:
@@ -140,25 +120,32 @@ def flee(square: dict, square_snapshots: list, square_index: int):
             square["vy"] = direction[1] / speed_direction * speed
 
 
-def update_squares(squares: list[dict], delta_time: float) -> None:
-    """Move the squares, bounce on edges, then apply flee behavior.
-
-    delta_time: elapsed time in seconds since last frame.
-    Movement is scaled by delta_time to ensure consistent speed regardless of frame rate.
-    """
+def update_squares(squares: list[dict]) -> None:
+    """Move the squares, bounce on edges, then apply flee behavior."""
     # Snapshot the current positions first so flee checks use the same frame state.
-    square_snapshots = [(square["x"], square["y"], square["size"]) for square in squares]
+    list_squares = [(square["x"], square["y"], square["size"]) for square in squares]
 
     for square in squares:
-        # Update movement first so the frame has a single, predictable order of changes.
-        # Multiply velocity by delta_time to make movement independent of frame rate.
-        square["x"] += square["vx"] * delta_time
-        square["y"] += square["vy"] * delta_time
+        size = int(square["size"])
 
-        bounce_square_on_edges(square)
+        square["x"] += square["vx"]
+        square["y"] += square["vy"]
 
+        if square["x"] <= 0:
+            square["x"] = 0
+            square["vx"] = abs(square["vx"])
+        elif square["x"] + size >= WIDTH:
+            square["x"] = WIDTH - size
+            square["vx"] = -square["vx"]
+
+        if square["y"] <= 0:
+            square["y"] = 0
+            square["vy"] = abs(square["vy"])
+        elif square["y"] + size >= HEIGHT:
+            square["y"] = HEIGHT - size
+            square["vy"] = -square["vy"]
     for square_index, square in enumerate(squares):
-        flee(square, square_snapshots, square_index)
+        flee(square, list_squares, square_index)
 
 
 def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> None:
@@ -168,35 +155,26 @@ def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> No
     screen.blit(text, (10, 10))
 
     for square in squares:
-        # Use a descriptive name here because this rectangle is only for rendering.
-        square_rect = pygame.Rect(int(square["x"]), int(square["y"]), int(square["size"]), int(square["size"]))
-        pygame.draw.rect(screen, square["color"], square_rect)
+        rect = pygame.Rect(int(square["x"]), int(square["y"]), int(square["size"]), int(square["size"]))
+        pygame.draw.rect(screen, square["color"], rect)
 
     pygame.display.flip()
 
 
 def run_loop(screen: pygame.Surface, clock: pygame.time.Clock, squares: list[dict]) -> None:
-    """Run the main frame loop: input, update, draw, then tick the clock.
-
-    Time-based movement: delta_time ensures movement is frame-rate independent.
-    """
+    """Run the main frame loop: input, update, draw, then tick the clock."""
     running = True
     hud_font = pygame.font.SysFont(None, 28)
     while running:
-        # Calculate elapsed time in seconds since last frame (clock.tick returns milliseconds).
-        delta_time = clock.tick(FPS) / 1000.0
-
-        # The loop stays in this exact order so the current frame can be read, updated, and rendered clearly.
         fps = clock.get_fps()
         running = handle_events()
-        update_squares(squares, delta_time)  # Pass delta_time for time-based movement.
+        update_squares(squares)
         draw_scene(screen, squares, hud_font, fps)
-        # Note: clock.tick is now called above to get delta_time, not at the end.
+        clock.tick(FPS)
 
 
 def main() -> None:
     """Program entrypoint for the square animation demo."""
-    # Initialize the window and frame clock once before creating the animated squares.
     screen, clock = init_game()
     squares = create_squares(SQUARE_COUNT)
 

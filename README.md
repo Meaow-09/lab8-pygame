@@ -4,7 +4,7 @@ Simple Pygame animation with randomly sized, randomly colored squares that move 
 
 ## Features
 
-re- 25 squares spawn at random positions by default.
+- 20 squares spawn at random positions by default.
 - Each square gets a random size.
 - Each square gets a different random color.
 - Each square starts with a random speed and direction.
