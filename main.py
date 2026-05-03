@@ -10,18 +10,21 @@ BACKGROUND_COLOR = (20, 20, 20)
 # Speed is now in pixels per second (multiplied by FPS to convert from frame-rate dependent).
 MIN_SPEED = 60.0  # 1.0 pixels/frame * 60 fps = 60 pixels/second
 MAX_SPEED = 300.0  # 5.0 pixels/frame * 60 fps = 300 pixels/second
+MIN_LIFE_TIME = 10
+MAX_LIFE_TIME = 60
 MIN_SQUARE_SIZE = 10
 MAX_SQUARE_SIZE = 75
 MIN_FLEE_DISTANCE = 30
 
 
-def init_game() -> tuple[pygame.Surface, pygame.time.Clock]:
+def init_game() -> tuple[pygame.Surface, pygame.time.Clock, pygame.font.Font]:
     """Initialize Pygame and return the screen surface and frame clock."""
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Moving Squares Skeleton")
     clock = pygame.time.Clock()
-    return screen, clock
+    hud_font = pygame.font.SysFont(None, 28)
+    return screen, clock, hud_font
 
 
 def speed_from_size(size: int) -> float:
@@ -39,30 +42,38 @@ def create_squares(count: int) -> list[dict]:
     squares = []
 
     for _ in range(count):
-        size = random.randint(MIN_SQUARE_SIZE, MAX_SQUARE_SIZE)
-        x = random.randint(0, WIDTH - size)
-        y = random.randint(0, HEIGHT - size)
-        speed = speed_from_size(size)
-        angle = random.uniform(0.0, 2 * math.pi)
-        vx = math.cos(angle) * speed
-        vy = math.sin(angle) * speed
-        color = (
-            random.randint(40, 255),
-            random.randint(40, 255),
-            random.randint(40, 255),
-        )
-
-        square = {
-            "x": x,
-            "y": y,
-            "size": size,
-            "vx": vx,
-            "vy": vy,
-            "color": color,
-        }
+        square = create_square()
         squares.append(square)
 
     return squares
+
+
+def create_square() -> dict:
+    """Create a square dictionary with random size, color, position, and velocity."""
+    size = random.randint(MIN_SQUARE_SIZE, MAX_SQUARE_SIZE)
+    x = random.randint(0, WIDTH - size)
+    y = random.randint(0, HEIGHT - size)
+    speed = speed_from_size(size)
+    angle = random.uniform(0.0, 2 * math.pi)
+    vx = math.cos(angle) * speed
+    vy = math.sin(angle) * speed
+    color = (
+        random.randint(40, 255),
+        random.randint(40, 255),
+        random.randint(40, 255),
+    )
+    life_time = random.randint(MIN_LIFE_TIME, MAX_LIFE_TIME)
+
+    square = {
+        "x": x,
+        "y": y,
+        "size": size,
+        "vx": vx,
+        "vy": vy,
+        "color": color,
+        "life_time": life_time,
+    }
+    return square
 
 
 def bounce_square_on_edges(square: dict) -> None:
@@ -95,7 +106,7 @@ def handle_events() -> bool:
     return True
 
 
-def find_flee_direction(square: dict, square_snapshots: list, square_index: int):
+def find_flee_direction(square: dict, square_snapshots: list, square_index: int) -> tuple[float, float] | None:
     """Return a vector pointing away from the closest larger square nearby."""
     square_center_x = square["x"] + square["size"] / 2
     square_center_y = square["y"] + square["size"] / 2
@@ -130,11 +141,7 @@ def flee(square: dict, square_snapshots: list, square_index: int):
     direction = find_flee_direction(square, square_snapshots, square_index)
     if direction is not None:
         speed_direction = (direction[0] ** 2 + direction[1] ** 2) ** 0.5
-        # if square["size"] > (MAX_SQUARE_SIZE + MIN_SQUARE_SIZE) / 2:
-        #     if speed_direction > 0:
-        #         square["vx"] = direction[0] / speed_direction * speed * -1
-        #         square["vy"] = direction[1] / speed_direction * speed * -1
-        # else:
+
         if speed_direction > 0:
             square["vx"] = direction[0] / speed_direction * speed
             square["vy"] = direction[1] / speed_direction * speed
@@ -151,11 +158,16 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
 
     for square in squares:
         # Update movement first so the frame has a single, predictable order of changes.
-        # Multiply velocity by delta_time to make movement independent of frame rate.
-        square["x"] += square["vx"] * delta_time
-        square["y"] += square["vy"] * delta_time
-
-        bounce_square_on_edges(square)
+        square["life_time"] -= delta_time
+        if square["life_time"] <= 0:
+            squares.remove(square)
+            new = create_square()
+            squares.append(new)
+        else:
+            # Multiply velocity by delta_time to make movement independent of frame rate.
+            square["x"] += square["vx"] * delta_time
+            square["y"] += square["vy"] * delta_time
+            bounce_square_on_edges(square)
 
     for square_index, square in enumerate(squares):
         flee(square, square_snapshots, square_index)
@@ -175,13 +187,12 @@ def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> No
     pygame.display.flip()
 
 
-def run_loop(screen: pygame.Surface, clock: pygame.time.Clock, squares: list[dict]) -> None:
+def run_loop(screen: pygame.Surface, clock: pygame.time.Clock, hud_font: pygame.font.Font, squares: list[dict]) -> None:
     """Run the main frame loop: input, update, draw, then tick the clock.
 
     Time-based movement: delta_time ensures movement is frame-rate independent.
     """
     running = True
-    hud_font = pygame.font.SysFont(None, 28)
     while running:
         # Calculate elapsed time in seconds since last frame (clock.tick returns milliseconds).
         delta_time = clock.tick(FPS) / 1000.0
@@ -197,10 +208,10 @@ def run_loop(screen: pygame.Surface, clock: pygame.time.Clock, squares: list[dic
 def main() -> None:
     """Program entrypoint for the square animation demo."""
     # Initialize the window and frame clock once before creating the animated squares.
-    screen, clock = init_game()
+    screen, clock, hud_font = init_game()
     squares = create_squares(SQUARE_COUNT)
 
-    run_loop(screen, clock, squares)
+    run_loop(screen, clock, hud_font, squares)
 
     pygame.quit()
 
