@@ -210,6 +210,7 @@ def calculate_new_direction(square: dict, square_snapshots: list, square_index: 
 
 
 def check_collision(square: dict, other: dict) -> bool:
+    # Detect if squares collision, return true if square and other collide
     dx = abs(square["x"] - other["x"])
     dy = abs(square["y"] - other["y"])
     distance = (dx ** 2 + dy ** 2) ** 0.5
@@ -228,6 +229,7 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
     Behavior:
     - Smaller squares flee from larger squares (threats).
     - Larger squares chase smaller squares (prey).
+    - Larger squares eat smaller squares if they collide.
     - Each square has a limited lifespan; when life_time expires, a new square spawns.
     """
     # Snapshot the current positions first so behavior checks use the same frame state.
@@ -252,6 +254,18 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
         new_direction = calculate_new_direction(square, square_snapshots, square_index)
         if new_direction is not None:
             square["vx"], square["vy"] = new_direction
+
+    # Eating feature
+    for square in squares:
+        for other in squares:
+            if square == other:
+                continue
+            if check_collision(square, other):
+                if other["size"] < square["size"]:
+                    squares.remove(other)
+                    new = create_square(other["size"])
+                    squares.append(new)
+
 
 
 def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> None:
