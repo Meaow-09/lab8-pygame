@@ -5,8 +5,8 @@ from typing import List, Tuple
 
 
 class Config:
-    WIDTH: int = 800
-    HEIGHT: int = 600
+    WIDTH: int = 1200
+    HEIGHT: int = 900
 
     NUM_BOIDS: int = 200
     BOID_SIZE: int = 5
@@ -56,7 +56,7 @@ class Boid:
         pass
 
     # TODO: Implement Screen Wrapping
-    # Screen wrapping: if a boid goes off one edge of the screen, 
+    # Screen wrapping: if a boid goes off one edge of the screen,
     # it should reappear on the opposite edge
     def _screen_wrap(self) -> None:
         if self.x < config.BOID_SIZE:
@@ -81,7 +81,11 @@ class Boid:
     # TODO: Implement Random Steering of the velocity vector to create more natural movement
     def _random_steer(self, spread: float = 0.2) -> None:
         # # Randomly steer a bit to create more natural movement
-        pass
+        angle: float = math.atan2(self.vy, self.vx)
+        angle += random.random() * random.randint(-1,1) * spread
+        # angle += random.randint(-1,1) * spread
+        self.vx: float = self.speed * math.cos(angle)
+        self.vy: float = self.speed * math.sin(angle)
 
 
     # TODO: Implement the three main boid behaviors: separation, alignment, and cohesion
@@ -178,7 +182,7 @@ def run_simulation() -> None:
     pygame.init()
     screen: pygame.Surface = pygame.display.set_mode((Config.WIDTH, Config.HEIGHT))
     clock: pygame.time.Clock = pygame.time.Clock()
-    font: pygame.font.Font = pygame.font.SysFont(None, 18)
+    font: pygame.font.Font = pygame.font.SysFont(None, 24)
 
     # Create boids
     boids: List[Boid] = [Boid() for _ in range(Config.NUM_BOIDS)]
