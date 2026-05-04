@@ -6,3 +6,17 @@
 
 - When square "Screen Warpping", the trail go through the whole screen
   - Fix: While drawing the line , ignore the line that's too long
+
+## 8 Speed Test
+
+```python
+# What's "correct speed"?
+
+if TEST_MODE_ON:
+    if (square["vx"] ** 2 + square["vy"] ** 2) ** 0.5 == square["correct_speed"]:
+        pass
+    else:
+        square["color"] = (255,0,0) # RED
+        # or pygame.draw.xxx
+```
+

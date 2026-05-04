@@ -2,6 +2,8 @@ import math
 import random
 import pygame
 
+TEST_MODE_ON: bool = True
+
 WIDTH = 1200
 HEIGHT = 900
 FPS = 60
@@ -19,8 +21,10 @@ MAX_SQUARE_SIZE = 75
 MIN_DETECTION_RANGE = 40
 CHASING_FACTOR = 2
 EATING_FACTOR = 0.2
+GROWTH_SPEED = 0.5
+GROWTH_CACHE = []
 
-MIX_SQUARES = [25] * 5 + [10] * 10 + [30] * 4
+MIX_SQUARES = [30] * 4 + [25] * 5 + [10] * 10
 
 
 def init_game() -> tuple[pygame.Surface, pygame.time.Clock, pygame.font.Font]:
@@ -43,7 +47,7 @@ def speed_from_size(size: int) -> float:
     return MAX_SPEED - normalized * (MAX_SPEED - MIN_SPEED)
 
 
-def create_squares(mix: list, count=0) -> list[dict]:
+def create_squares(count=0, mix: list = []) -> list[dict]:
     """Create square dictionaries with random size, color, position, and velocity."""
     squares = []
     if len(mix) == 0:
@@ -210,6 +214,11 @@ def calculate_new_direction(square: dict, square_snapshots: list, square_index: 
         if speed_direction > 0:
             vx = vx / speed_direction * speed
             vy = vy / speed_direction * speed
+            new_speed = (vx ** 2 + vy ** 2) ** 0.5
+            # avoid too slow speed
+            if new_speed < MIN_SPEED:
+                vx = vx / new_speed * MIN_SPEED
+                vy = vy / new_speed * MIN_SPEED
             speed_xy = (vx, vy)
     return speed_xy
 
@@ -256,6 +265,8 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
                 square["trail"].pop(0)
             square["trail"].append((square["x"] + (square["size"] / 2), square["y"] + (square["size"] / 2)))
             bounce_square_on_edges(square)
+        eat(square, squares)
+        growth(square, delta_time)
 
     # Apply flee/chase behavior based on snapshots (all squares had the same position at frame start).
     for square_index, square in enumerate(squares):
@@ -263,18 +274,30 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
         if new_direction is not None:
             square["vx"], square["vy"] = new_direction
 
+
+def eat(square: dict, squares: list[dict]):
     # Eating feature
-    for square in squares:
-        for other in squares:
-            if square == other:
-                continue
-            if check_collision(square, other):
-                if other["size"] < square["size"]:
-                    squares.remove(other)
-                    new = create_square(int(other["size"]))
-                    squares.append(new)
-                    if square["size"] < MAX_SQUARE_SIZE:
-                        square["size"] += other["size"] * EATING_FACTOR
+    for other in squares:
+        if square == other:
+            continue
+        if check_collision(square, other):
+            if other["size"] < square["size"]:
+                squares.remove(other)
+                new = create_square(int(other["size"]))
+                squares.append(new)
+                if square["size"] < MAX_SQUARE_SIZE:
+                    # print(GROWTH_CACHE)
+                    growth_cache = {"square": square, "plus": other["size"] * EATING_FACTOR}
+                    GROWTH_CACHE.append(growth_cache)
+
+
+def growth(square: dict, delta_time: float):
+    for c in GROWTH_CACHE:
+        if c["plus"] <= 0.0 or square["size"] >= MAX_SQUARE_SIZE:
+            GROWTH_CACHE.remove(c)
+        elif square == c["square"]:
+            delta_size = c["plus"] / GROWTH_SPEED * delta_time
+            square["size"] += delta_size
 
 
 def draw_trail(square: dict, surface: pygame.Surface):
@@ -326,8 +349,8 @@ def main() -> None:
     """Program entrypoint for the square animation demo."""
     # Initialize the window and frame clock once before creating the animated squares.
     screen, clock, hud_font = init_game()
-    # squares = create_squares([],SQUARE_COUNT)
-    squares = create_squares(MIX_SQUARES)
+    # squares = create_squares(count = SQUARE_COUNT)
+    squares = create_squares(mix=MIX_SQUARES)
 
     run_loop(screen, clock, hud_font, squares)
 
