@@ -2,8 +2,8 @@ import math
 import random
 import pygame
 
-WIDTH = 1200
-HEIGHT = 900
+WIDTH = 2000
+HEIGHT = 1500
 FPS = 60
 SQUARE_COUNT = 20
 BACKGROUND_COLOR = (20, 20, 20)
@@ -107,10 +107,22 @@ def handle_events() -> bool:
     return True
 
 
-def find_closest_square(small: bool, square: dict, square_snapshots: list, square_index: int) -> tuple[float, float] | None:
+def find_closest_square(is_threat: bool, square: dict, square_snapshots: list, square_index: int) -> tuple[
+                                                                                                         float, float] | None:
+    """Find the closest larger square (threat to flee from) or smaller square (prey to chase).
+
+    Args:
+        is_threat: If True, find larger squares (flee). If False, find smaller squares (chase).
+        square: The square we're evaluating.
+        square_snapshots: Snapshot of all square positions for consistent detection.
+        square_index: Index of the current square.
+
+    Returns:
+        Direction vector pointing away from threat or toward prey, or None if none found.
+    """
     square_center_x = square["x"] + square["size"] / 2
     square_center_y = square["y"] + square["size"] / 2
-    direction = None
+    closest_direction = None
     min_distance = (WIDTH ** 2 + HEIGHT ** 2) ** 0.5
 
     for other_index, other in enumerate(square_snapshots):
@@ -118,12 +130,12 @@ def find_closest_square(small: bool, square: dict, square_snapshots: list, squar
             continue
 
         other_size = other[2]
-        if small:
-            if other_size < square["size"]:
-                continue
-        else:
-            if other_size > square["size"]:
-                continue
+
+        # Filter by threat type: larger squares are threats, smaller are prey.
+        if is_threat and other_size < square["size"]:
+            continue
+        if not is_threat and other_size > square["size"]:
+            continue
 
         other_center_x = other[0] + other_size / 2
         other_center_y = other[1] + other_size / 2
@@ -134,25 +146,47 @@ def find_closest_square(small: bool, square: dict, square_snapshots: list, squar
 
         if distance <= detection_range and distance < min_distance:
             min_distance = distance
-            direction = (x, y)
-    if direction and not small:
-        direction = (direction[0] * CHASING_FACTOR * -1, direction[1] * CHASING_FACTOR * -1)
-    return direction
+            closest_direction = (x, y)
+
+    # For chasing: invert and amplify direction toward prey.
+    if closest_direction and not is_threat:
+        closest_direction = (
+            closest_direction[0] * CHASING_FACTOR * -1,
+            closest_direction[1] * CHASING_FACTOR * -1
+        )
+
+    return closest_direction
 
 
-def calculate_new_direction(square: dict, square_snapshots: list, square_index: int):
-    """Adjust a square's velocity so it keeps its speed while fleeing."""
+def calculate_new_direction(square: dict, square_snapshots: list, square_index: int) -> tuple[float, float] | None:
+    """Calculate new velocity based on threats to flee from and prey to chase.
+
+    Rules:
+    - Flee from larger squares (threats).
+    - Chase smaller squares (prey).
+    - If both exist, balance both forces.
+    - Preserve speed magnitude.
+
+    Returns:
+        New (vx, vy) tuple or None if no adjustment needed.
+    """
     speed = (square["vx"] ** 2 + square["vy"] ** 2) ** 0.5
     speed_xy = None
+    # Find closest threat (larger square) and closest prey (smaller square).
     flee_direction = find_closest_square(True, square, square_snapshots, square_index)
     chase_direction = find_closest_square(False, square, square_snapshots, square_index)
+
+    # If neither exists, no change needed.
     if flee_direction and chase_direction is None:
         speed_xy = (square["vx"], square["vy"])
         return speed_xy
+    # If only prey exists, chase it.
     elif flee_direction is None:
         return chase_direction
+    # If only threat exists, flee from it.
     elif chase_direction is None:
         return flee_direction
+    # If both exist, combine forces: net = flee_vector + chase_vector.
     else:
         vx = flee_direction[0] - chase_direction[0]
         vy = flee_direction[1] - chase_direction[1]
@@ -165,17 +199,23 @@ def calculate_new_direction(square: dict, square_snapshots: list, square_index: 
 
 
 def update_squares(squares: list[dict], delta_time: float) -> None:
-    """Move the squares, bounce on edges, then apply flee behavior.
+    """Move the squares, bounce on edges, apply behavior, and manage lifetimes.
 
     delta_time: elapsed time in seconds since last frame.
     Movement is scaled by delta_time to ensure consistent speed regardless of frame rate.
+
+    Behavior:
+    - Smaller squares flee from larger squares (threats).
+    - Larger squares chase smaller squares (prey).
+    - Each square has a limited lifespan; when life_time expires, a new square spawns.
     """
-    # Snapshot the current positions first so flee checks use the same frame state.
+    # Snapshot the current positions first so behavior checks use the same frame state.
     square_snapshots = [(square["x"], square["y"], square["size"]) for square in squares]
 
     for square in squares:
         # Update movement first so the frame has a single, predictable order of changes.
         square["life_time"] -= delta_time
+
         if square["life_time"] <= 0:
             squares.remove(square)
             new = create_square()
@@ -186,11 +226,11 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
             square["y"] += square["vy"] * delta_time
             bounce_square_on_edges(square)
 
+    # Apply flee/chase behavior based on snapshots (all squares had the same position at frame start).
     for square_index, square in enumerate(squares):
-        speed_xy = calculate_new_direction(square, square_snapshots, square_index)
-        if speed_xy:
-            square["vx"] = speed_xy[0]
-            square["vy"] = speed_xy[1]
+        new_direction = calculate_new_direction(square, square_snapshots, square_index)
+        if new_direction is not None:
+            square["vx"], square["vy"] = new_direction
 
 
 def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> None:
