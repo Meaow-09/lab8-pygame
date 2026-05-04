@@ -1,5 +1,8 @@
 # Exam
 
-## 3: Screen Wrapping
+## 7: Trails Specs
 
-- if touch the wall, change x to other size of 
+<img src="./assets/image-20260504111022834.png" alt="image-20260504111022834" style="zoom:50%;" />
+
+- When square "Screen Warpping", the trail go through the whole screen
+  - Fix: While drawing the line , ignore the line that's too long

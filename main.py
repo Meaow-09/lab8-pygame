@@ -6,12 +6,13 @@ WIDTH = 1200
 HEIGHT = 900
 FPS = 60
 SQUARE_COUNT = 20
+TRAILS_LENGTH = 35
 BACKGROUND_COLOR = (20, 20, 20)
 # Speed is now in pixels per second (multiplied by FPS to convert from frame-rate dependent).
 MIN_SPEED = 60.0  # 1.0 pixels/frame * 60 fps = 60 pixels/second
 MAX_SPEED = 300.0  # 5.0 pixels/frame * 60 fps = 300 pixels/second
-MIN_LIFE_TIME = 10
-MAX_LIFE_TIME = 60
+MIN_LIFE_TIME = 20
+MAX_LIFE_TIME = 120
 MIN_SQUARE_SIZE = 15
 MAX_SQUARE_SIZE = 75
 
@@ -47,8 +48,8 @@ def create_squares(mix: list, count=0) -> list[dict]:
     squares = []
     if len(mix) == 0:
         for _ in range(count):
-            squares.append(square)
             square = create_square()
+            squares.append(square)
 
     elif count == 0:
         for size in mix:
@@ -83,6 +84,7 @@ def create_square(size=0) -> dict:
         "vy": vy,
         "color": color,
         "life_time": life_time,
+        "trail": [(x, y)],
     }
     return square
 
@@ -250,6 +252,9 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
             # Multiply velocity by delta_time to make movement independent of frame rate.
             square["x"] += square["vx"] * delta_time
             square["y"] += square["vy"] * delta_time
+            if len(square["trail"]) >= TRAILS_LENGTH:
+                square["trail"].pop(0)
+            square["trail"].append((square["x"] + (square["size"] / 2), square["y"] + (square["size"] / 2)))
             bounce_square_on_edges(square)
 
     # Apply flee/chase behavior based on snapshots (all squares had the same position at frame start).
@@ -272,6 +277,17 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
                         square["size"] += other["size"] * EATING_FACTOR
 
 
+def draw_trail(square: dict, surface: pygame.Surface):
+    color = square["color"]
+    for i in range(len(square["trail"]) - 1):
+        start_pos = square["trail"][i]
+        end_pos = square["trail"][i + 1]
+        # remove the lines across the screen
+        if ((start_pos[0] - end_pos[0]) ** 2 + (start_pos[1] - end_pos[1]) ** 2) ** 0.5 > square["size"]:
+            continue
+        width: int = 2
+        pygame.draw.line(surface, color, start_pos, end_pos, width)
+
 
 def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> None:
     """Clear the screen, draw the HUD, and render every square."""
@@ -282,6 +298,7 @@ def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> No
     for square in squares:
         # Use a descriptive name here because this rectangle is only for rendering.
         square_rect = pygame.Rect(int(square["x"]), int(square["y"]), int(square["size"]), int(square["size"]))
+        draw_trail(square, screen)
         pygame.draw.rect(screen, square["color"], square_rect)
 
     pygame.display.flip()
@@ -309,6 +326,7 @@ def main() -> None:
     """Program entrypoint for the square animation demo."""
     # Initialize the window and frame clock once before creating the animated squares.
     screen, clock, hud_font = init_game()
+    # squares = create_squares([],SQUARE_COUNT)
     squares = create_squares(MIX_SQUARES)
 
     run_loop(screen, clock, hud_font, squares)
