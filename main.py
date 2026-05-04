@@ -89,18 +89,22 @@ def bounce_square_on_edges(square: dict) -> None:
     size = int(square["size"])
 
     if square["x"] <= 0:
+        # square["x"] = 0
+        # square["vx"] = abs(square["vx"])
+        square["x"] = WIDTH - square["size"]
+    elif square["x"] + size > WIDTH:
+        # square["x"] = WIDTH - size
+        # square["vx"] = -square["vx"]
         square["x"] = 0
-        square["vx"] = abs(square["vx"])
-    elif square["x"] + size >= WIDTH:
-        square["x"] = WIDTH - size
-        square["vx"] = -square["vx"]
 
     if square["y"] <= 0:
+        # square["y"] = 0
+        # square["vy"] = abs(square["vy"])
+        square["y"] = HEIGHT - square["size"]
+    elif square["y"] + size > HEIGHT:
+        # square["y"] = HEIGHT - size
+        # square["vy"] = -square["vy"]
         square["y"] = 0
-        square["vy"] = abs(square["vy"])
-    elif square["y"] + size >= HEIGHT:
-        square["y"] = HEIGHT - size
-        square["vy"] = -square["vy"]
 
 
 def handle_events() -> bool:
