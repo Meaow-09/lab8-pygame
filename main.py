@@ -225,7 +225,7 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
 
         if square["life_time"] <= 0:
             squares.remove(square)
-            new = create_square()
+            new = create_square(square["size"])
             squares.append(new)
         else:
             # Multiply velocity by delta_time to make movement independent of frame rate.
