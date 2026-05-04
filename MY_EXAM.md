@@ -23,4 +23,3 @@ if TEST_MODE_ON:
 
 ## 10: Screen Wrapping
 
-Did nothing?
