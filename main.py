@@ -209,6 +209,16 @@ def calculate_new_direction(square: dict, square_snapshots: list, square_index: 
     return speed_xy
 
 
+def check_collision(square: dict, other: dict) -> bool:
+    dx = abs(square["x"] - other["x"])
+    dy = abs(square["y"] - other["y"])
+    distance = (dx ** 2 + dy ** 2) ** 0.5
+    if distance <= square["size"] + other["size"]:
+        return True
+    else:
+        return False
+
+
 def update_squares(squares: list[dict], delta_time: float) -> None:
     """Move the squares, bounce on edges, apply behavior, and manage lifetimes.
 
@@ -281,7 +291,6 @@ def main() -> None:
     # Initialize the window and frame clock once before creating the animated squares.
     screen, clock, hud_font = init_game()
     squares = create_squares(MIX_SQUARES)
-    print(MIX_SQUARES)
 
     run_loop(screen, clock, hud_font, squares)
 
