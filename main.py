@@ -14,8 +14,11 @@ MIN_LIFE_TIME = 10
 MAX_LIFE_TIME = 60
 MIN_SQUARE_SIZE = 15
 MAX_SQUARE_SIZE = 75
-CHASING_FACTOR = 2
+
 MIN_DETECTION_RANGE = 40
+CHASING_FACTOR = 2
+EATING_FACTOR = 0.2
+
 MIX_SQUARES = [25] * 5 + [10] * 10 + [30] * 4
 
 
@@ -241,7 +244,7 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
 
         if square["life_time"] <= 0:
             squares.remove(square)
-            new = create_square(square["size"])
+            new = create_square(int(square["size"]))
             squares.append(new)
         else:
             # Multiply velocity by delta_time to make movement independent of frame rate.
@@ -263,8 +266,10 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
             if check_collision(square, other):
                 if other["size"] < square["size"]:
                     squares.remove(other)
-                    new = create_square(other["size"])
+                    new = create_square(int(other["size"]))
                     squares.append(new)
+                    if square["size"] < MAX_SQUARE_SIZE:
+                        square["size"] += other["size"] * EATING_FACTOR
 
 
 
