@@ -16,7 +16,11 @@ if TEST_MODE_ON:
     if (square["vx"] ** 2 + square["vy"] ** 2) ** 0.5 == square["correct_speed"]:
         pass
     else:
+        # if not correct
         square["color"] = (255,0,0) # RED
         # or pygame.draw.xxx
 ```
 
+## 10: Screen Wrapping
+
+Did nothing?

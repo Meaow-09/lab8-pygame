@@ -286,12 +286,13 @@ def eat(square: dict, squares: list[dict]):
                 new = create_square(int(other["size"]))
                 squares.append(new)
                 if square["size"] < MAX_SQUARE_SIZE:
-                    # print(GROWTH_CACHE)
+                    # save into "cache"
                     growth_cache = {"square": square, "plus": other["size"] * EATING_FACTOR}
                     GROWTH_CACHE.append(growth_cache)
 
 
 def growth(square: dict, delta_time: float):
+    # increase the size of square by time
     for c in GROWTH_CACHE:
         if c["plus"] <= 0.0 or square["size"] >= MAX_SQUARE_SIZE:
             GROWTH_CACHE.remove(c)
