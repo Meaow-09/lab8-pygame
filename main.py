@@ -12,9 +12,10 @@ MIN_SPEED = 60.0  # 1.0 pixels/frame * 60 fps = 60 pixels/second
 MAX_SPEED = 300.0  # 5.0 pixels/frame * 60 fps = 300 pixels/second
 MIN_LIFE_TIME = 10
 MAX_LIFE_TIME = 60
-MIN_SQUARE_SIZE = 10
+MIN_SQUARE_SIZE = 15
 MAX_SQUARE_SIZE = 75
-MIN_FLEE_DISTANCE = 30
+CHASING_FACTOR = 2
+MIN_DETECTION_RANGE = 40
 
 
 def init_game() -> tuple[pygame.Surface, pygame.time.Clock, pygame.font.Font]:
@@ -106,8 +107,7 @@ def handle_events() -> bool:
     return True
 
 
-def find_flee_direction(square: dict, square_snapshots: list, square_index: int) -> tuple[float, float] | None:
-    """Return a vector pointing away from the closest larger square nearby."""
+def find_closest_square(small: bool, square: dict, square_snapshots: list, square_index: int) -> tuple[float, float] | None:
     square_center_x = square["x"] + square["size"] / 2
     square_center_y = square["y"] + square["size"] / 2
     direction = None
@@ -118,33 +118,50 @@ def find_flee_direction(square: dict, square_snapshots: list, square_index: int)
             continue
 
         other_size = other[2]
-        if other_size <= square["size"]:
-            continue
+        if small:
+            if other_size < square["size"]:
+                continue
+        else:
+            if other_size > square["size"]:
+                continue
 
         other_center_x = other[0] + other_size / 2
         other_center_y = other[1] + other_size / 2
         x = square_center_x - other_center_x
         y = square_center_y - other_center_y
         distance = (x ** 2 + y ** 2) ** 0.5
-        flee_distance = (square["size"] + other_size) / 2 + MIN_FLEE_DISTANCE
+        detection_range = (square["size"] + other_size) / 2 + MIN_DETECTION_RANGE
 
-        if distance <= flee_distance and distance < min_distance:
+        if distance <= detection_range and distance < min_distance:
             min_distance = distance
             direction = (x, y)
-
+    if direction and not small:
+        direction = (direction[0] * CHASING_FACTOR * -1, direction[1] * CHASING_FACTOR * -1)
     return direction
 
 
-def flee(square: dict, square_snapshots: list, square_index: int):
+def calculate_new_direction(square: dict, square_snapshots: list, square_index: int):
     """Adjust a square's velocity so it keeps its speed while fleeing."""
     speed = (square["vx"] ** 2 + square["vy"] ** 2) ** 0.5
-    direction = find_flee_direction(square, square_snapshots, square_index)
-    if direction is not None:
-        speed_direction = (direction[0] ** 2 + direction[1] ** 2) ** 0.5
-
+    speed_xy = None
+    flee_direction = find_closest_square(True, square, square_snapshots, square_index)
+    chase_direction = find_closest_square(False, square, square_snapshots, square_index)
+    if flee_direction and chase_direction is None:
+        speed_xy = (square["vx"], square["vy"])
+        return speed_xy
+    elif flee_direction is None:
+        return chase_direction
+    elif chase_direction is None:
+        return flee_direction
+    else:
+        vx = flee_direction[0] - chase_direction[0]
+        vy = flee_direction[1] - chase_direction[1]
+        speed_direction = (vx ** 2 + vy ** 2) ** 0.5
         if speed_direction > 0:
-            square["vx"] = direction[0] / speed_direction * speed
-            square["vy"] = direction[1] / speed_direction * speed
+            vx = vx / speed_direction * speed
+            vy = vy / speed_direction * speed
+            speed_xy = (vx, vy)
+    return speed_xy
 
 
 def update_squares(squares: list[dict], delta_time: float) -> None:
@@ -170,7 +187,10 @@ def update_squares(squares: list[dict], delta_time: float) -> None:
             bounce_square_on_edges(square)
 
     for square_index, square in enumerate(squares):
-        flee(square, square_snapshots, square_index)
+        speed_xy = calculate_new_direction(square, square_snapshots, square_index)
+        if speed_xy:
+            square["vx"] = speed_xy[0]
+            square["vy"] = speed_xy[1]
 
 
 def draw_scene(screen: pygame.Surface, squares: list[dict], hud_font, fps) -> None:

@@ -33,3 +33,8 @@ Flee direction
 - Generate a random life time when generating squares (in a certain range)
 - For each loop, life time -= FPS/1000, if <=0 die
 - If anyone dead, generate a new square.
+
+## Part 4
+
+### Chasing
+
